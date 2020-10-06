@@ -40,7 +40,7 @@ class ValueIterationAgent(ValueEstimationAgent):
         for a given number of iterations using the supplied
         discount factor.
     """
-    def __init__(self, mdp, discount = 0.9, iterations = 100):
+    def __init__(self, mdp: mdp.MarkovDecisionProcess, discount = 0.9, iterations = 100):
         """
           Your value iteration agent should take an mdp on
           construction, run the indicated number of iterations
@@ -62,6 +62,13 @@ class ValueIterationAgent(ValueEstimationAgent):
     def runValueIteration(self):
         # Write value iteration code here
         "*** YOUR CODE HERE ***"
+        for _ in range(self.iterations):
+            newValues = util.Counter()
+            for state in self.mdp.getStates():
+                successors = self.mdp.getPossibleActions(state)
+                if not successors: continue
+                newValues[state] = max([self.computeQValueFromValues(state, action) for action in successors])
+            self.values = newValues
 
 
     def getValue(self, state):
@@ -77,7 +84,10 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        successors = self.mdp.getTransitionStatesAndProbs(state, action)
+        result = sum([t * (self.mdp.getReward(state, action, s) + self.discount * self.values[s]) for (s, t) in successors])
+        return result
+
 
     def computeActionFromValues(self, state):
         """
@@ -89,7 +99,13 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if (self.mdp.isTerminal(state)): return None
+        values = util.Counter() # maps a -> Q(s, a)
+        for action in self.mdp.getPossibleActions(state):
+            values[action] = self.computeQValueFromValues(state, action)
+        
+        return values.argMax()
+        
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
