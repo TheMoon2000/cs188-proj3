@@ -146,6 +146,23 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        def getNextState():
+            states = self.mdp.getStates()
+            index = 0
+            while True:
+                if not states: yield None
+                yield states[index]
+                index = (index + 1) % len(states)
+
+
+        gen = getNextState()
+
+        for _ in range(self.iterations):
+            state = next(gen)
+            successors = self.mdp.getPossibleActions(state)
+            if not successors: continue
+            self.values[state] = max([self.computeQValueFromValues(state, action) for action in successors])
+                
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     """
@@ -166,4 +183,25 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        predecessors = {} # maps each state to a list of predecessor states
+        for state in self.mdp.getStates():
+            actions = self.mdp.getPossibleActions(state)
+            for action in actions:
+                for (successor, _) in self.mdp.getTransitionStatesAndProbs(state, action):
+                    predecessors[successor] = predecessors.get(successor, set()) | set([state]) # set union
+
+        pq = util.PriorityQueue()
+        for s in self.mdp.getStates():
+            if self.mdp.isTerminal(s): continue
+            diff = abs(self.values[s] - max([self.getQValue(s, a) for a in self.mdp.getPossibleActions(s)]))
+            pq.push(s, -diff)
+        
+        for i in range(self.iterations):
+            if pq.isEmpty(): break
+            state = pq.pop()
+            self.values[state] = max([self.getQValue(state, a) for a in self.mdp.getPossibleActions(state)])
+            for pd in predecessors.get(state, set()):
+                diff = abs(self.values[pd] - max([self.getQValue(pd, a) for a in self.mdp.getPossibleActions(pd)]))
+                if diff > self.theta: pq.update(pd, -diff)
+        
 
