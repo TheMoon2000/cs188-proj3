@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -67,7 +67,7 @@ class QLearningAgent(ReinforcementAgent):
         if not actions: return 0.0
 
         # Return the maximum of Q(s, *) over all possible actions from s.
-        return max([self.qValues[(state, a)] for a in self.getLegalActions(state)])
+        return max([self.getQValue(state, a) for a in self.getLegalActions(state)])
 
     def computeActionFromQValues(self, state):
         """
@@ -80,7 +80,7 @@ class QLearningAgent(ReinforcementAgent):
         if not actions: return None
 
         # Return the action which maximizes Q(s, a)
-        return max(actions, key=lambda a: self.qValues[(state, a)])
+        return max(actions, key=lambda a: self.getQValue(state, a))
 
     def getAction(self, state):
         """
@@ -97,7 +97,7 @@ class QLearningAgent(ReinforcementAgent):
         legalActions = self.getLegalActions(state)
         if not legalActions: return None
         "*** YOUR CODE HERE ***"
-        
+
         if util.flipCoin(self.epsilon):
             # Take random action
             return random.choice(legalActions)
@@ -124,7 +124,7 @@ class QLearningAgent(ReinforcementAgent):
 
     def getValue(self, state):
         return self.computeValueFromQValues(state)
-    
+
     def transition(self, state, action):
         total = 0
         t = []
@@ -133,7 +133,7 @@ class QLearningAgent(ReinforcementAgent):
         if total == 0: return []
         for (successor, count) in self.observedTransitions.get((state, action), []):
             t.append((successor, count / total))
-        
+
         return t
 
 
@@ -191,14 +191,24 @@ class ApproximateQAgent(PacmanQAgent):
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        features = self.featExtractor.getFeatures(state, action)
+        weights = self.getWeights();
+        qValue = 0
+        for feature in features:
+            qValue += features[feature] * weights[feature]
+        return qValue
 
     def update(self, state, action, nextState, reward):
         """
            Should update your weights based on transition
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        features = self.featExtractor.getFeatures(state, action)
+        difference = reward + self.discount * self.getValue(nextState) - self.getQValue(state, action)
+
+        for feature in features:
+            self.weights[feature] = self.weights[feature] + self.alpha * difference * features[feature]
+
 
     def final(self, state):
         "Called at the end of each game."
